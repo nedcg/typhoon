@@ -1,6 +1,6 @@
 import {List, Stack, Record} from 'https://cdn.pika.dev/immutable@^4.0.0-rc.12';
 
-export class InterceptorError extends Error {
+class InterceptorError extends Error {
     constructor(stage, name, error) {
 	super(name);
 	this.stage = stage;
@@ -9,22 +9,22 @@ export class InterceptorError extends Error {
     }
 }
 
-export function nextContextLeave(context) {
+function nextContextLeave(context) {
     return context.update('stack', stack => stack.pop());
 }
 
-export function nextContextEnter(context) {
+function nextContextEnter(context) {
     const queue = context.get('queue');
     return context
 	.set('queue', queue.shift())
 	.set('stack', context.get('stack').push(queue.first()));
 }
 
-export function setError(context, stage, name, error) {
+function setError(context, stage, name, error) {
     return context.set('error', new InterceptorError(stage, name, error))
 }
 
-export async function processEnter(context) {
+async function processEnter(context) {
     const queue = context.get('queue');
     const stack = context.get('stack');
 
@@ -44,10 +44,9 @@ export async function processEnter(context) {
     }
 
     return processEnter(nextContext);
-
 }
 
-export async function processLeave(context) {
+async function processLeave(context) {
     const stack = context.get('stack');
 
     if (stack.isEmpty()) {
@@ -68,7 +67,7 @@ export async function processLeave(context) {
     return processLeave(nextContext);
 }
 
-export async function processError(context) {
+async function processError(context) {
     const stack = context.get('stack');
     const error = context.get('error');
 
@@ -90,7 +89,7 @@ export async function processError(context) {
     return processError(newContext);
 }
 
-export function terminate(context) {
+function terminate(context) {
     return context.delete('queue');
 }
 
@@ -104,5 +103,5 @@ export function addInterceptors(context, ...interceptors) {
     return context.update('queue', queue => queue.push(...interceptors));
 }
 
-export const BaseContextProps = {queue: List(), stack: Stack(), error: null}
-export const ContextDefaults = (ctx) => Record({...ctx, ...BaseContextProps}, 'InterceptorContext');
+const BaseContextProps = {queue: List(), stack: Stack(), error: null}
+export const ContextDefaults = (ctx, ctxName='InterceptorContext') => Record({...ctx, ...BaseContextProps}, ctxName);
